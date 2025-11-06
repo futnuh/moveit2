@@ -261,4 +261,22 @@ void MotionPlanningFrame::clearStatesButtonClicked()
   return;
 }
 
+void MotionPlanningFrame::storedStateItemSelectionChanged()
+{
+  QListWidgetItem* item = ui_->list_states->currentItem();
+
+  if (item)
+  {
+    const std::string& state_name = item->text().toStdString();
+    auto it = robot_states_.find(state_name);
+    if (it != robot_states_.end())
+    {
+      // Set the selected stored state as the goal state
+      moveit::core::RobotState robot_state(*planning_display_->getQueryGoalState());
+      moveit::core::robotStateMsgToRobotState(it->second, robot_state);
+      planning_display_->setQueryGoalState(robot_state);
+    }
+  }
+}
+
 }  // namespace moveit_rviz_plugin

@@ -215,6 +215,7 @@ private Q_SLOTS:
   void clearStatesButtonClicked();
   void setAsStartStateButtonClicked();
   void setAsGoalStateButtonClicked();
+  void storedStateItemSelectionChanged();
 
   // Pick and place
   void detectObjectsButtonClicked();

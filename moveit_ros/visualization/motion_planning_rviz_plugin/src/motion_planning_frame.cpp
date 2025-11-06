@@ -156,6 +156,7 @@ MotionPlanningFrame::MotionPlanningFrame(MotionPlanningDisplay* pdisplay, rviz_c
   connect(ui_->set_as_goal_state_button, SIGNAL(clicked()), this, SLOT(setAsGoalStateButtonClicked()));
   connect(ui_->remove_state_button, SIGNAL(clicked()), this, SLOT(removeStateButtonClicked()));
   connect(ui_->clear_states_button, SIGNAL(clicked()), this, SLOT(clearStatesButtonClicked()));
+  connect(ui_->list_states, SIGNAL(itemSelectionChanged()), this, SLOT(storedStateItemSelectionChanged()));
   connect(ui_->approximate_ik, SIGNAL(stateChanged(int)), this, SLOT(approximateIKChanged(int)));
 
   connect(ui_->detect_objects_button, SIGNAL(clicked()), this, SLOT(detectObjectsButtonClicked()));
