@@ -242,6 +242,73 @@ void MotionPlanningFrame::removeStateButtonClicked()
   populateRobotStatesList();
 }
 
+void MotionPlanningFrame::renameStateButtonClicked()
+{
+  QListWidgetItem* item = ui_->list_states->currentItem();
+  if (!item)
+  {
+    QMessageBox::warning(this, "No state selected", "Please select a stored robot state to rename.");
+    return;
+  }
+
+  const std::string old_name = item->text().toStdString();
+  auto state_it = robot_states_.find(old_name);
+  if (state_it == robot_states_.end())
+  {
+    QMessageBox::warning(this, "State not found", "The selected state could not be found in memory.");
+    return;
+  }
+
+  bool ok = false;
+  QString new_name_qstr =
+      QInputDialog::getText(this, tr("Rename stored state"), tr("State name:"), QLineEdit::Normal, item->text(), &ok);
+  if (!ok)
+  {
+    return;
+  }
+  if (new_name_qstr.isEmpty())
+  {
+    QMessageBox::warning(this, "Invalid name", "State name cannot be empty.");
+    return;
+  }
+
+  const std::string new_name = new_name_qstr.toStdString();
+  if (new_name == old_name)
+  {
+    return;
+  }
+
+  if (robot_states_.find(new_name) != robot_states_.end())
+  {
+    QMessageBox::warning(this, "Name already exists",
+                         QString("The name '").append(new_name_qstr).append("' already exists. Choose a new name."));
+    return;
+  }
+
+  const moveit_msgs::msg::RobotState stored_state = state_it->second;
+
+  // Attempt to persist the rename in the warehouse database first
+  if (robot_state_storage_)
+  {
+    try
+    {
+      robot_state_storage_->renameRobotState(old_name, new_name, planning_display_->getRobotModel()->getName());
+    }
+    catch (const std::exception& ex)
+    {
+      QMessageBox::warning(this, "Failed to rename state in database",
+                           QString("Unable to rename the state in the warehouse: ").append(ex.what()));
+      return;
+    }
+  }
+
+  robot_states_.erase(state_it);
+  robot_states_.insert(RobotStatePair(new_name, stored_state));
+
+  populateRobotStatesList();
+  setItemSelectionInList(new_name, true, ui_->list_states);
+}
+
 void MotionPlanningFrame::clearStatesButtonClicked()
 {
   QMessageBox msg_box;
