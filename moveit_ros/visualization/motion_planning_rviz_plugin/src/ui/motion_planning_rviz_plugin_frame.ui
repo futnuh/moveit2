@@ -1747,6 +1747,13 @@ This is usually achieved by random seeding, which can flip the robot configurati
               </property>
              </widget>
             </item>
+            <item row="2" column="0" colspan="2">
+             <widget class="QPushButton" name="update_state_from_goal_button">
+              <property name="text">
+               <string>Update from Goal</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </widget>
          </item>
@@ -2165,6 +2172,7 @@ This is usually achieved by random seeding, which can flip the robot configurati
   <tabstop>set_as_goal_state_button</tabstop>
   <tabstop>remove_state_button</tabstop>
   <tabstop>rename_state_button</tabstop>
+  <tabstop>update_state_from_goal_button</tabstop>
   <tabstop>save_start_state_button</tabstop>
   <tabstop>save_goal_state_button</tabstop>
   <tabstop>status_text</tabstop>

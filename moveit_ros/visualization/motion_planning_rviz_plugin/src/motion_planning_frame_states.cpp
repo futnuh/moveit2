@@ -42,6 +42,8 @@
 #include <QMessageBox>
 #include <QInputDialog>
 
+#include <cmath>
+
 #include "ui_motion_planning_rviz_plugin_frame.h"
 
 namespace moveit_rviz_plugin
@@ -307,6 +309,78 @@ void MotionPlanningFrame::renameStateButtonClicked()
 
   populateRobotStatesList();
   setItemSelectionInList(new_name, true, ui_->list_states);
+}
+
+void MotionPlanningFrame::updateStateFromGoalButtonClicked()
+{
+  QListWidgetItem* item = ui_->list_states->currentItem();
+  if (!item)
+  {
+    QMessageBox::warning(this, "No state selected", "Please select a stored robot state to update.");
+    return;
+  }
+
+  const std::string state_name = item->text().toStdString();
+  auto state_it = robot_states_.find(state_name);
+  if (state_it == robot_states_.end())
+  {
+    QMessageBox::warning(this, "State not found", "The selected state could not be found in memory.");
+    return;
+  }
+
+  const moveit::core::RobotState& goal_state = *planning_display_->getQueryGoalState();
+  moveit::core::RobotState stored_state(goal_state);
+  moveit::core::robotStateMsgToRobotState(state_it->second, stored_state);
+
+  const double* stored_positions = stored_state.getVariablePositions();
+  const double* goal_positions = goal_state.getVariablePositions();
+  const std::size_t variable_count = goal_state.getVariableCount();
+
+  double max_difference = 0.0;
+  for (std::size_t i = 0; i < variable_count; ++i)
+  {
+    const double difference = std::fabs(goal_positions[i] - stored_positions[i]);
+    if (difference > max_difference)
+      max_difference = difference;
+  }
+
+  constexpr double SIGNIFICANT_STATE_DIFFERENCE = 0.1;  // radians or meters, depending on joint type
+  if (max_difference > SIGNIFICANT_STATE_DIFFERENCE)
+  {
+    QMessageBox::StandardButton response = QMessageBox::warning(
+        this, tr("Confirm State Update"),
+        tr("The goal state differs from stored state '%1' by up to %2.\n\nDo you want to overwrite this stored state "
+           "with the current goal state?")
+            .arg(item->text())
+            .arg(max_difference, 0, 'f', 3),
+        QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+    if (response != QMessageBox::Yes)
+    {
+      return;
+    }
+  }
+
+  moveit_msgs::msg::RobotState updated_state_msg;
+  moveit::core::robotStateToRobotStateMsg(goal_state, updated_state_msg);
+
+  if (robot_state_storage_)
+  {
+    try
+    {
+      robot_state_storage_->removeRobotState(state_name);
+      robot_state_storage_->addRobotState(updated_state_msg, state_name, planning_display_->getRobotModel()->getName());
+    }
+    catch (const std::exception& ex)
+    {
+      QMessageBox::warning(this, "Failed to update state in database",
+                           QString("Unable to update the state in the warehouse: %1").arg(ex.what()));
+      return;
+    }
+  }
+
+  state_it->second = updated_state_msg;
+  populateRobotStatesList();
+  setItemSelectionInList(state_name, true, ui_->list_states);
 }
 
 void MotionPlanningFrame::clearStatesButtonClicked()
